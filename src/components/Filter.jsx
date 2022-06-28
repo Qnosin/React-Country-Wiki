@@ -7,9 +7,11 @@ function Filter({className}) {
     const {setFilterValue, setIsSearched,setIsAll} = useContext(CountryContext);
 
   const  handleInputChange = (e)=>{
+    if(e.target.value === ''){
+      setFilterValue('');
+  }else{
     setFilterValue(e.target.value);
-    setIsSearched(true);
-    setIsAll(false);
+  }
   }
 
   return (

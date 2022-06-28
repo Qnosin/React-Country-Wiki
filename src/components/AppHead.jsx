@@ -5,22 +5,57 @@ import { useContext } from 'react';
 import { CountryContext } from '../helper/CountryContext';
 import AOS from "aos";
 import "aos/dist/aos.css";
+import Pagination from '@mui/material/Pagination';
+import Stack from '@mui/material/Stack';
+import { Grid } from '@mui/material';
 function AppHead({className}) {
     const [country,setCountry] = useState([]);
-    const {isAll,isFilter,isSearched} = useContext(CountryContext);
+    const [filterCountry,setFilterCountry] = useState([]);
     const {filterValue} = useContext(CountryContext);
-    let tab = []
+    const [pageNumber,setPageNumber] = useState(0);
+
+
+    const PerPage = 12;
+    let pagesVisited = pageNumber * PerPage;
     useEffect(()=>{
             AOS.init();
             AOS.refresh();
             axios.get(`https://restcountries.com/v3.1/all`).then((data)=>{
-                        tab.push(data.data[0],data.data[2],data.data[10],data.data[4],data.data[6],data.data[10],data.data[15],data.data[20],data.data[26],data.data[9],data.data[12],data.data[20],data.data[21],data.data[22],data.data[23],data.data[24]);
-                        setCountry(tab);
+                setCountry(data.data);
             })
     },[])
+
+    useEffect(()=>{
+            function getSearchedData(){
+                    setFilterCountry(country.filter((country)=>{
+                    return country.name.common.toLowerCase().includes(filterValue.toLowerCase());
+                   }))
+            }
+            const myTimeOut = setTimeout(getSearchedData,500);
+            return () =>{
+             clearTimeout(myTimeOut);
+            }
+    },[filterValue])
+
+  //Count pages and handle changes 
+  let tabToLength = 0;
+  if(filterCountry.length !== 0){
+    tabToLength = filterCountry.length 
+  }else{
+    tabToLength = country.length
+  }
+  
+  const pageCount = Math.ceil(tabToLength / PerPage) - 1;
+  if(pageCount === 0){
+    pagesVisited = 0;
+  }
+  const handlePageChange = (e,value) =>{
+    setPageNumber(value);
+  }
   return (
+    <>
     <div className={className}>
-        {country.map((data,index)=>{
+        {filterCountry.length !== 0 ? filterCountry.slice(pagesVisited,pagesVisited + PerPage).map((data,index)=>{
             return(
                 <section data-aos="fade-up" key={index}>
                          <img src={data.flags.svg}></img>
@@ -32,8 +67,26 @@ function AppHead({className}) {
                          </div>
                      </section>
             )
-        })}
+        }):country.slice(pagesVisited,pagesVisited + PerPage).map((data,index)=>{
+            return(
+                <section data-aos="fade-up" key={index}>
+                         <img src={data.flags.svg}></img>
+                         <div>
+                             <h1>{data.name.common}</h1>
+                             <p>Population: {data.population}</p>
+                             <p>Region: {data.continents[0]}</p>
+                             <p>Capital: {data.capital}</p>
+                         </div>
+                     </section>
+            )
+        }) }
     </div>
+    <Grid sx={{pt:2,pb:2}} container justifyContent="center">
+    <Stack spacing={2}>
+            <Pagination onChange={handlePageChange} color='primary'  count={pageCount} />
+    </Stack>
+    </Grid>
+    </>
   )
 }
 
